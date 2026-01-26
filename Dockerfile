@@ -8,4 +8,3 @@ COPY . .
 
 EXPOSE 3000
 CMD ["sh", "-c", "php -S 0.0.0.0:$PORT"]
-
