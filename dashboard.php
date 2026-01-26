@@ -106,27 +106,20 @@ h2{margin:18px 0 6px}
 
 /* upload */
 .upload{
-    border:2px dashed #334155;
-    padding:18px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    background:#0f172a;
+    padding:16px 18px;
     border-radius:16px;
-    color:#94a3b8;
     cursor:pointer;
-    margin-bottom:14px;
+    margin-bottom:16px;
     transition:.2s;
 }
-.upload span{
-    font-weight:600;
-}
-.upload small{
-    display:block;
-    margin-top:6px;
-    font-size:12px;
-    opacity:.7;
-}
-.upload:hover{
-    border-color:#6366f1;
-    color:white;
-}
+.upload:hover{ background:#1e293b }
+.upload-icon{ font-size:26px }
+.upload-text .title{ font-weight:600 }
+.upload-text .desc{ font-size:12px; color:#94a3b8 }
 
 .input{
     background:#0f172a;
@@ -221,13 +214,16 @@ h2{margin:18px 0 6px}
 
 <div class="progress"><div class="bar"></div></div>
 
-<form action="checkin.php" method="post" enctype="multipart/form-data" id="checkinForm">
+<form action="checkin.php" method="post" enctype="multipart/form-data">
 <input type="hidden" name="type" value="checkin">
 
-<label class="upload">
-    <span>📸 รูปตอนเล่นเกม</span>
-    <small>ยังไม่ได้เลือกรูป</small>
-    <input type="file" name="photo" hidden>
+<label class="upload" id="uploadBox">
+    <div class="upload-icon">📸</div>
+    <div class="upload-text">
+        <div class="title">อัปโหลดรูปตอนเล่นเกม</div>
+        <div class="desc">ยังไม่ได้เลือกรูป</div>
+    </div>
+    <input type="file" name="photo" id="fileInput" hidden required>
 </label>
 
 <div class="input">
@@ -262,23 +258,14 @@ h2{margin:18px 0 6px}
 </div>
 
 <script>
-const fileInput = document.querySelector('input[name="photo"]');
-const uploadBox = document.querySelector('.upload');
-const form = document.getElementById('checkinForm');
+const fileInput = document.getElementById('fileInput');
+const uploadBox = document.getElementById('uploadBox');
 
 fileInput.addEventListener('change', function(){
     if(this.files.length > 0){
-        uploadBox.querySelector('span').textContent = "✅ เลือกรูปแล้ว";
-        uploadBox.querySelector('small').textContent = this.files[0].name;
-        uploadBox.style.borderColor = "#22c55e";
+        uploadBox.querySelector('.title').textContent = "เลือกรูปแล้ว";
+        uploadBox.querySelector('.desc').textContent = this.files[0].name;
         uploadBox.style.background = "#052e1c";
-    }
-});
-
-form.addEventListener('submit', e=>{
-    if(fileInput.files.length === 0){
-        alert("กรุณาอัปโหลดรูปก่อนเช็คชื่อ");
-        e.preventDefault();
     }
 });
 
