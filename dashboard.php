@@ -8,7 +8,6 @@ if(!isset($_SESSION['user'])){
 }
 
 $user = $_SESSION['user'];
-$today = date("Y-m-d");
 
 if(!empty($user['avatar'])){
     $ext = str_starts_with($user['avatar'], 'a_') ? 'gif' : 'png';
@@ -96,7 +95,7 @@ h2{margin:18px 0 6px}
     background:#0f172a;
     border-radius:8px;
     overflow:hidden;
-    margin-bottom:24px;
+    margin-bottom:20px;
 }
 .bar{
     height:100%;
@@ -104,24 +103,37 @@ h2{margin:18px 0 6px}
     background:linear-gradient(90deg,#6366f1,#22c55e);
 }
 
-.file{
-    border:2px dashed #334155;
-    padding:18px;
+/* กล่องอัปโหลดใหม่ */
+.upload{
+    background:#0f172a;
+    border:1px solid #1e293b;
     border-radius:16px;
-    color:#94a3b8;
-    cursor:pointer;
+    padding:14px;
     margin-bottom:12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer;
+    transition:.2s;
 }
-.file:hover{
+.upload span{
+    color:#cbd5f5;
+    font-size:14px;
+}
+.upload small{
+    color:#64748b;
+    font-size:12px;
+}
+.upload:hover{
     border-color:#6366f1;
-    color:white;
+    background:#111c3a;
 }
 
 .input{
     background:#0f172a;
     padding:14px;
     border-radius:16px;
-    margin-bottom:18px;
+    margin-bottom:16px;
 }
 .input input{
     width:100%;
@@ -213,9 +225,10 @@ h2{margin:18px 0 6px}
 <form action="checkin.php" method="post" enctype="multipart/form-data">
 <input type="hidden" name="type" value="checkin">
 
-<label class="file">
-📸 อัปโหลดรูปตอนเล่น
-<input type="file" name="photo" hidden required>
+<label class="upload">
+    <span>📸 รูปตอนเล่นเกม</span>
+    <small>คลิกเพื่อเลือกไฟล์</small>
+    <input type="file" name="photo" hidden required>
 </label>
 
 <div class="input">
