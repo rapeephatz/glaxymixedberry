@@ -1,6 +1,6 @@
 <?php
 $client_id = "1464996907016524048";
-$redirect_uri = "http://galaxymixedberry.gt.tc/htdocs/callback.php";
+$redirect_uri = "https://glaxymixedberry.onrender.com/callback.php";
 
 $auth_url = "https://discord.com/api/oauth2/authorize"
           . "?client_id=" . $client_id
