@@ -1,21 +1,25 @@
 <?php
-$conn = new mysqli("localhost","root","","attendance");
-if ($conn->connect_error) die("DB error");
+include "db.php";
 
-$q1 = $conn->query("SELECT COUNT(*) AS c FROM users");
-$q2 = $conn->query("SELECT COUNT(*) AS c FROM checkins");
-$q3 = $conn->query("SELECT COUNT(*) AS c FROM checkins WHERE DATE(time)=CURDATE()");
+$today = date("Y-m-d");
 
-if(!$q1 || !$q2 || !$q3){
-    die("SQL error: ".$conn->error);
-}
+/* จำนวน user */
+$u = $conn->query("SELECT COUNT(*) as total FROM users")
+          ->fetch_assoc()['total'];
 
-$total_users = $q1->fetch_assoc()['c'];
-$total_checkin = $q2->fetch_assoc()['c'];
-$today = $q3->fetch_assoc()['c'];
+/* วันนี้ */
+$t = $conn->query("
+SELECT COUNT(*) as total 
+FROM checkins 
+WHERE DATE(created_at) = '$today'
+")->fetch_assoc()['total'];
+
+/* ทั้งหมด */
+$c = $conn->query("SELECT COUNT(*) as total FROM checkins")
+          ->fetch_assoc()['total'];
 
 echo json_encode([
-    "users" => $total_users,
-    "today" => $today,
-    "total" => $total_checkin
+    "users" => $u,
+    "today" => $t,
+    "total" => $c
 ]);

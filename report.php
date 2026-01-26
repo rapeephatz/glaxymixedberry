@@ -11,20 +11,17 @@ $search = $_GET['q'] ?? "";
 
 $sql = "
 SELECT 
-    u.display_name,
-    COUNT(c.id) AS total,
-    COUNT(
-        CASE 
-            WHEN DATE(c.time) = CURDATE() THEN 1 
-        END
-    ) AS today
+u.display_name,
+u.username,
+COUNT(c.id) AS total
 FROM users u
-LEFT JOIN checkins c 
-    ON u.discord_id = c.discord_id
-WHERE u.display_name LIKE '%$search%'
-GROUP BY u.discord_id
+LEFT JOIN checkins c ON u.discord_id = c.discord_id
+GROUP BY 
+u.display_name,
+u.username
 ORDER BY total DESC
 ";
+
 
 $result = $conn->query($sql);
 

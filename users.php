@@ -29,10 +29,15 @@ COUNT(c.id) AS total
 FROM users u
 LEFT JOIN checkins c ON u.discord_id = c.discord_id
 WHERE u.username LIKE '%$search%'
-GROUP BY u.discord_id
+GROUP BY 
+u.discord_id,
+u.username,
+u.display_name,
+u.role,
+u.status
 ORDER BY total DESC
-
 ";
+
 
 $result = $conn->query($sql);
 
