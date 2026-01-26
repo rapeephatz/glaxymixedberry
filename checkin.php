@@ -21,8 +21,8 @@ if($check->num_rows > 0){
    ============================== */
 function uploadToCloudinary($file){
     $cloud = "dzisxdaul";        // cloud name ของคุณ
-    $key = "533369769661924";
-    $secret = "ScW3SimCLzYDgMPGeBHfz3I-a3g";
+    $key = "API_KEY_คุณ";       // ใส่จริง
+    $secret = "API_SECRET_คุณ"; // ใส่จริง
 
     $timestamp = time();
     $signature = sha1("timestamp=$timestamp$secret");
@@ -32,7 +32,7 @@ function uploadToCloudinary($file){
         'api_key' => $key,
         'timestamp' => $timestamp,
         'signature' => $signature,
-        'folder' => 'checkin'   // โฟลเดอร์ใน Cloudinary
+        'folder' => 'checkin'
     ];
 
     $ch = curl_init("https://api.cloudinary.com/v1_1/$cloud/image/upload");
@@ -52,11 +52,19 @@ $photo_url = null;
 
 if(isset($_FILES['photo']) && $_FILES['photo']['error'] == 0){
     $upload = uploadToCloudinary($_FILES['photo']);
-    $photo_url = $upload['secure_url']; // URL รูปจริง
+
+    // ถ้าอัปโหลดพัง → หยุดทันที
+    if(!isset($upload['secure_url'])){
+        echo "<pre>";
+        print_r($upload);
+        exit("Cloudinary upload failed");
+    }
+
+    $photo_url = $upload['secure_url'];
 }
 
 /* ==============================
-   insert ลง DB
+   insert
    ============================== */
 $conn->query("
 INSERT INTO checkins (discord_id,time,photo) 
