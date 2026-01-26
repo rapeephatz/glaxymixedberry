@@ -8,6 +8,7 @@ if(!isset($_SESSION['user'])){
 }
 
 $user = $_SESSION['user'];
+$today = date("Y-m-d");
 
 if(!empty($user['avatar'])){
     $ext = str_starts_with($user['avatar'], 'a_') ? 'gif' : 'png';
@@ -95,7 +96,7 @@ h2{margin:18px 0 6px}
     background:#0f172a;
     border-radius:8px;
     overflow:hidden;
-    margin-bottom:20px;
+    margin-bottom:24px;
 }
 .bar{
     height:100%;
@@ -103,37 +104,35 @@ h2{margin:18px 0 6px}
     background:linear-gradient(90deg,#6366f1,#22c55e);
 }
 
-/* กล่องอัปโหลดใหม่ */
+/* upload */
 .upload{
-    background:#0f172a;
-    border:1px solid #1e293b;
+    border:2px dashed #334155;
+    padding:18px;
     border-radius:16px;
-    padding:14px;
-    margin-bottom:12px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+    color:#94a3b8;
     cursor:pointer;
+    margin-bottom:14px;
     transition:.2s;
 }
 .upload span{
-    color:#cbd5f5;
-    font-size:14px;
+    font-weight:600;
 }
 .upload small{
-    color:#64748b;
+    display:block;
+    margin-top:6px;
     font-size:12px;
+    opacity:.7;
 }
 .upload:hover{
     border-color:#6366f1;
-    background:#111c3a;
+    color:white;
 }
 
 .input{
     background:#0f172a;
     padding:14px;
     border-radius:16px;
-    margin-bottom:16px;
+    margin-bottom:18px;
 }
 .input input{
     width:100%;
@@ -222,13 +221,13 @@ h2{margin:18px 0 6px}
 
 <div class="progress"><div class="bar"></div></div>
 
-<form action="checkin.php" method="post" enctype="multipart/form-data">
+<form action="checkin.php" method="post" enctype="multipart/form-data" id="checkinForm">
 <input type="hidden" name="type" value="checkin">
 
 <label class="upload">
     <span>📸 รูปตอนเล่นเกม</span>
-    <small>คลิกเพื่อเลือกไฟล์</small>
-    <input type="file" name="photo" hidden required>
+    <small>ยังไม่ได้เลือกรูป</small>
+    <input type="file" name="photo" hidden>
 </label>
 
 <div class="input">
@@ -263,6 +262,26 @@ h2{margin:18px 0 6px}
 </div>
 
 <script>
+const fileInput = document.querySelector('input[name="photo"]');
+const uploadBox = document.querySelector('.upload');
+const form = document.getElementById('checkinForm');
+
+fileInput.addEventListener('change', function(){
+    if(this.files.length > 0){
+        uploadBox.querySelector('span').textContent = "✅ เลือกรูปแล้ว";
+        uploadBox.querySelector('small').textContent = this.files[0].name;
+        uploadBox.style.borderColor = "#22c55e";
+        uploadBox.style.background = "#052e1c";
+    }
+});
+
+form.addEventListener('submit', e=>{
+    if(fileInput.files.length === 0){
+        alert("กรุณาอัปโหลดรูปก่อนเช็คชื่อ");
+        e.preventDefault();
+    }
+});
+
 function openLeave(){ leavePopup.style.display='flex' }
 function closeLeave(){ leavePopup.style.display='none' }
 </script>
