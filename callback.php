@@ -10,7 +10,7 @@ if (!isset($_GET['code'])) {
 $code = $_GET['code'];
 
 $client_id = "1464996907016524048";
-$client_secret = "JpokKOO-WUcfpOwjP92-rMdKIUw7nY8J";
+$client_secret = "g-d9_QnsJLlcPL11QMdIBGMpAOJokaCr";
 $redirect_uri = "https://glaxymixedberry.onrender.com/callback.php";
 
 /* 2. ขอ access token */
