@@ -21,8 +21,8 @@ if($check->num_rows > 0){
    ============================== */
 function uploadToCloudinary($file){
     $cloud = "dzisxdaul";        // cloud name ของคุณ
-    $key = "API_KEY_คุณ";       // ใส่จริง
-    $secret = "API_SECRET_คุณ"; // ใส่จริง
+    $key = "533369769661924";       // ใส่จริง
+    $secret = "ScW3SimCLzYDgMPGeBHfz3I-a3g"; // ใส่จริง
 
     $timestamp = time();
     $signature = sha1("timestamp=$timestamp$secret");
