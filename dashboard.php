@@ -35,143 +35,112 @@ WHERE discord_id='{$user['id']}'
 <title>GMB Attendance</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box}
 body{
-margin:0;
-font-family:Inter;
-background:
-radial-gradient(circle at top,#1e293b,#020617);
-color:white;
-overflow:hidden;
-}
-.bg{
-position:fixed;inset:0;
-background:url("https://i.imgur.com/8bKQXQy.png");
-opacity:.07;
+    margin:0;
+    background: radial-gradient(circle at top,#1e293b,#020617);
+    font-family: 'Inter', sans-serif;
+    color:white;
 }
 .container{
-height:100vh;
-display:flex;
-align-items:center;
-justify-content:center;
-position:relative;
+    height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
 }
 .card{
-width:420px;
-padding:40px;
-border-radius:28px;
-background:rgba(255,255,255,0.08);
-backdrop-filter:blur(18px);
-box-shadow:0 60px 120px rgba(0,0,0,.7);
-text-align:center;
-animation:pop .8s ease;
-}
-@keyframes pop{
-from{transform:scale(.8);opacity:0}
-to{transform:scale(1);opacity:1}
+    width:400px;
+    background:rgba(255,255,255,0.06);
+    backdrop-filter: blur(18px);
+    border-radius:28px;
+    padding:40px 35px;
+    text-align:center;
+    box-shadow:0 40px 100px rgba(0,0,0,.7);
 }
 .avatar{
-width:120px;
-border-radius:50%;
-border:4px solid #5865F2;
-box-shadow:0 0 40px #5865F2;
+    width:120px;
+    border-radius:50%;
+    border:4px solid #6366f1;
+    box-shadow:0 0 30px #6366f1;
 }
-h2{margin:15px 0 0;font-size:26px}
-.id{font-size:13px;color:#94a3b8}
+h2{margin:15px 0 4px}
+p{color:#94a3b8;font-size:14px}
 
 .stat{
-margin:20px 0;
-display:flex;
-justify-content:space-between;
+    display:flex;
+    justify-content:space-between;
+    margin:20px 0;
 }
-.box{
-flex:1;
-margin:0 6px;
-background:rgba(0,0,0,.4);
-padding:12px;
-border-radius:14px;
-font-size:13px;
+.stat div{
+    background:#0f172a;
+    padding:12px 18px;
+    border-radius:14px;
+    width:48%;
 }
-.box span{display:block;font-size:22px;font-weight:800}
 
 .progress{
-margin:25px 0;
-height:12px;
-background:#0f172a;
-border-radius:20px;
-overflow:hidden;
+    height:8px;
+    background:#0f172a;
+    border-radius:8px;
+    overflow:hidden;
+    margin:20px 0;
 }
 .bar{
-height:100%;
-width:<?= min(100,$total*5) ?>%;
-background:linear-gradient(90deg,#5865F2,#22c55e);
-box-shadow:0 0 20px #5865F2;
+    height:100%;
+    width:<?= min(100,$total*5) ?>%;
+    background:linear-gradient(90deg,#6366f1,#22c55e);
+}
+
+.input{
+    margin-top:12px;
+    background:#0f172a;
+    padding:12px;
+    border-radius:14px;
+}
+.input input{
+    width:100%;
+    background:none;
+    border:none;
+    color:white;
+    outline:none;
+}
+
+.file{
+    border:2px dashed #334155;
+    padding:18px;
+    border-radius:14px;
+    margin-top:14px;
+    cursor:pointer;
+    color:#94a3b8;
+}
+.file:hover{
+    border-color:#6366f1;
+    color:white;
 }
 
 .btn{
-margin-top:12px;
-padding:14px;
-width:100%;
-border:none;
-border-radius:16px;
-background:linear-gradient(135deg,#5865F2,#22c55e);
-color:white;
-font-size:16px;
-font-weight:700;
-cursor:pointer;
-transition:.25s;
-box-shadow:0 0 30px rgba(88,101,242,.5);
+    margin-top:18px;
+    padding:14px;
+    width:100%;
+    border:none;
+    border-radius:16px;
+    font-size:16px;
+    cursor:pointer;
+    font-weight:600;
+    transition:.2s;
 }
-.btn:hover{
-transform:scale(1.06);
-box-shadow:0 0 60px rgba(88,101,242,1);
+.btn.primary{
+    background:linear-gradient(135deg,#6366f1,#22c55e);
 }
-.btn.red{
-background:linear-gradient(135deg,#ef4444,#f97316);
-box-shadow:0 0 30px rgba(239,68,68,.6);
+.btn.danger{
+    background:linear-gradient(135deg,#ef4444,#f97316);
 }
-.btn:disabled{
-background:#334155;
-box-shadow:none;
-transform:none;
-cursor:not-allowed;
-}
+.btn:hover{transform:scale(1.05)}
+.btn:disabled{background:#334155}
 
-.popup{
-position:fixed;inset:0;
-background:rgba(0,0,0,.7);
-display:none;
-align-items:center;
-justify-content:center;
-z-index:10;
-}
-.modal{
-width:340px;
-background:rgba(15,23,42,.9);
-backdrop-filter:blur(16px);
-padding:30px;
-border-radius:22px;
-box-shadow:0 40px 80px rgba(0,0,0,.7);
-text-align:center;
-animation:pop .4s ease;
-}
-input,textarea{
-width:100%;
-padding:12px;
-margin-top:10px;
-border-radius:12px;
-border:none;
-background:#020617;
-color:white;
-}
-.footer{
-margin-top:20px;
-font-size:13px;
-color:#94a3b8;
-}
-.footer a{color:#94a3b8;text-decoration:none}
-.footer a:hover{color:white}
+a{color:#94a3b8;font-size:13px;text-decoration:none}
+a:hover{color:white}
 </style>
+
 </head>
 <body>
 
@@ -194,15 +163,23 @@ color:#94a3b8;
 <form action="checkin.php" method="post" enctype="multipart/form-data">
 <input type="hidden" name="type" value="checkin">
 
-<input type="file" name="photo" required>
-<input type="text" name="gm_name" placeholder="˚₊‧ ɢᴍʙ ‧₊˚ ชื่อคนตรวจ" required>
+<label class="file">
+    📸 อัปโหลดรูปการเล่น
+    <input type="file" name="photo" hidden required>
+</label>
 
-<button class="btn" <?= $checked_today?'disabled':'' ?>>
-<?= $checked_today?'🎉 เช็คแล้ววันนี้':'🎮 เช็คชื่อวันนี้' ?>
+<div class="input">
+<input type="text" name="gm_name" 
+placeholder="˚₊‧ ɢᴍʙ ‧₊˚ ชื่อเพื่อนตรวจ" required>
+</div>
+
+<button class="btn primary" <?= $checked_today?'disabled':'' ?>>
+<?= $checked_today?'เช็คแล้ววันนี้':'🎉 เช็คชื่อวันนี้' ?>
 </button>
+
 </form>
 
-<button class="btn red" onclick="openLeave()">🛌 ขอลา</button>
+<button class="btn danger" onclick="openLeave()">🚨 ขอลา</button>
 
 <div class="footer">
 <a href="admin.php">Admin</a> | 
