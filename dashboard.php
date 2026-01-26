@@ -30,51 +30,65 @@ WHERE discord_id='{$user['id']}'
 ")->fetch_assoc()['t'];
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-<title>GMB Attendance</title>
+<meta charset="UTF-8">
+<title>ระบบเช็คชื่อ GMB</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 body{
     margin:0;
-    background: radial-gradient(circle at top,#1e293b,#020617);
+    background: linear-gradient(135deg,#020617,#0f172a);
     font-family: 'Inter', sans-serif;
     color:white;
 }
 .container{
-    height:100vh;
+    min-height:100vh;
     display:flex;
-    align-items:center;
     justify-content:center;
+    align-items:center;
 }
 .card{
-    width:400px;
+    width:420px;
     background:rgba(255,255,255,0.06);
-    backdrop-filter: blur(18px);
-    border-radius:28px;
-    padding:40px 35px;
+    border-radius:30px;
+    padding:40px 36px;
+    box-shadow:0 50px 120px rgba(0,0,0,.8);
     text-align:center;
-    box-shadow:0 40px 100px rgba(0,0,0,.7);
+    backdrop-filter: blur(18px);
 }
 .avatar{
     width:120px;
+    height:120px;
     border-radius:50%;
     border:4px solid #6366f1;
-    box-shadow:0 0 30px #6366f1;
+    box-shadow:0 0 25px #6366f1;
 }
-h2{margin:15px 0 4px}
-p{color:#94a3b8;font-size:14px}
+h2{margin:18px 0 6px}
+.id{
+    color:#94a3b8;
+    font-size:13px;
+}
 
-.stat{
+.stats{
     display:flex;
-    justify-content:space-between;
-    margin:20px 0;
+    gap:14px;
+    margin:22px 0;
 }
-.stat div{
+.stat{
+    flex:1;
     background:#0f172a;
-    padding:12px 18px;
-    border-radius:14px;
-    width:48%;
+    padding:14px;
+    border-radius:16px;
+}
+.stat .label{
+    font-size:13px;
+    color:#94a3b8;
+}
+.stat .value{
+    margin-top:4px;
+    font-size:20px;
+    font-weight:700;
 }
 
 .progress{
@@ -82,7 +96,7 @@ p{color:#94a3b8;font-size:14px}
     background:#0f172a;
     border-radius:8px;
     overflow:hidden;
-    margin:20px 0;
+    margin-bottom:24px;
 }
 .bar{
     height:100%;
@@ -90,11 +104,24 @@ p{color:#94a3b8;font-size:14px}
     background:linear-gradient(90deg,#6366f1,#22c55e);
 }
 
+.file{
+    border:2px dashed #334155;
+    padding:18px;
+    border-radius:16px;
+    color:#94a3b8;
+    cursor:pointer;
+    margin-bottom:12px;
+}
+.file:hover{
+    border-color:#6366f1;
+    color:white;
+}
+
 .input{
-    margin-top:12px;
     background:#0f172a;
-    padding:12px;
-    border-radius:14px;
+    padding:14px;
+    border-radius:16px;
+    margin-bottom:18px;
 }
 .input input{
     width:100%;
@@ -104,58 +131,81 @@ p{color:#94a3b8;font-size:14px}
     outline:none;
 }
 
-.file{
-    border:2px dashed #334155;
-    padding:18px;
-    border-radius:14px;
-    margin-top:14px;
-    cursor:pointer;
-    color:#94a3b8;
-}
-.file:hover{
-    border-color:#6366f1;
-    color:white;
-}
-
 .btn{
-    margin-top:18px;
-    padding:14px;
     width:100%;
+    padding:16px;
     border:none;
-    border-radius:16px;
+    border-radius:18px;
     font-size:16px;
-    cursor:pointer;
     font-weight:600;
+    cursor:pointer;
     transition:.2s;
 }
 .btn.primary{
     background:linear-gradient(135deg,#6366f1,#22c55e);
 }
 .btn.danger{
+    margin-top:12px;
     background:linear-gradient(135deg,#ef4444,#f97316);
 }
 .btn:hover{transform:scale(1.05)}
 .btn:disabled{background:#334155}
 
-a{color:#94a3b8;font-size:13px;text-decoration:none}
-a:hover{color:white}
-</style>
+.footer{
+    margin-top:18px;
+    font-size:13px;
+}
+.footer a{
+    color:#94a3b8;
+    text-decoration:none;
+}
+.footer a:hover{color:white}
 
+/* popup */
+.popup{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.7);
+    display:none;
+    align-items:center;
+    justify-content:center;
+}
+.modal{
+    width:300px;
+    background:#0f172a;
+    padding:24px;
+    border-radius:20px;
+}
+.modal textarea{
+    width:100%;
+    height:90px;
+    margin-top:10px;
+    background:#020617;
+    border:none;
+    border-radius:12px;
+    color:white;
+    padding:10px;
+}
+</style>
 </head>
 <body>
-
-<div class="bg"></div>
 
 <div class="container">
 <div class="card">
 
 <img class="avatar" src="<?= $avatar ?>">
 <h2><?= htmlspecialchars($user['username']) ?></h2>
-<div class="id">ID: <?= $user['id'] ?></div>
+<div class="id">Discord ID: <?= $user['id'] ?></div>
 
-<div class="stat">
-<div class="box">🔥 Streak<span><?= $total ?></span></div>
-<div class="box">📅 Today<span><?= $checked_today?'✔':'-' ?></span></div>
+<div class="stats">
+    <div class="stat">
+        <div class="label">🔥 เช็คสะสม</div>
+        <div class="value"><?= $total ?></div>
+    </div>
+    <div class="stat">
+        <div class="label">📅 วันนี้</div>
+        <div class="value"><?= $checked_today?'เช็คแล้ว':'ยังไม่เช็ค' ?></div>
+    </div>
 </div>
 
 <div class="progress"><div class="bar"></div></div>
@@ -164,22 +214,20 @@ a:hover{color:white}
 <input type="hidden" name="type" value="checkin">
 
 <label class="file">
-    📸 อัปโหลดรูปการเล่น
-    <input type="file" name="photo" hidden required>
+📸 อัปโหลดรูปตอนเล่น
+<input type="file" name="photo" hidden required>
 </label>
 
 <div class="input">
-<input type="text" name="gm_name" 
-placeholder="˚₊‧ ɢᴍʙ ‧₊˚ ชื่อเพื่อนตรวจ" required>
+<input type="text" name="gm_name" placeholder="˚₊‧ ɢᴍʙ ‧₊˚ ชื่อเพื่อนตรวจ" required>
 </div>
 
 <button class="btn primary" <?= $checked_today?'disabled':'' ?>>
-<?= $checked_today?'เช็คแล้ววันนี้':'🎉 เช็คชื่อวันนี้' ?>
+<?= $checked_today?'เช็คแล้ววันนี้':'เช็คชื่อวันนี้' ?>
 </button>
-
 </form>
 
-<button class="btn danger" onclick="openLeave()">🚨 ขอลา</button>
+<button class="btn danger" onclick="openLeave()">ขอลา</button>
 
 <div class="footer">
 <a href="admin.php">Admin</a> | 
@@ -191,11 +239,11 @@ placeholder="˚₊‧ ɢᴍʙ ‧₊˚ ชื่อเพื่อนตรว�
 
 <div class="popup" id="leavePopup">
 <div class="modal">
-<h3>🛌 ขอลา</h3>
+<h3>ขอลา</h3>
 <form action="checkin.php" method="post">
 <input type="hidden" name="type" value="leave">
 <textarea name="reason" placeholder="เหตุผลการลา..." required></textarea>
-<button class="btn red">ยืนยันลา</button>
+<button class="btn danger">ยืนยัน</button>
 </form>
 <button class="btn" onclick="closeLeave()">ยกเลิก</button>
 </div>
