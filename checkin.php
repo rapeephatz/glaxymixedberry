@@ -2,9 +2,6 @@
 session_start();
 include "db.php";
 
-phpinfo();
-exit;
-
 /* ==============================
    เช็ค session
    ============================== */
@@ -20,11 +17,12 @@ $id = $_SESSION['user']['id'];
    ============================== */
 $check = $conn->query("
     SELECT id FROM checkins
-    WHERE discord_id='$id'
-    AND DATE(time)=CURDATE()
+    WHERE discord_id = '$id'
+    AND DATE(time) = CURDATE()
 ");
 
 if ($check && $check->num_rows > 0) {
+    $_SESSION['error'] = "❌ วันนี้คุณเช็คชื่อไปแล้ว";
     header("Location: dashboard.php");
     exit();
 }
@@ -65,24 +63,26 @@ function uploadToCloudinary($file){
     return json_decode($res, true);
 }
 
-
 /* ==============================
-   อัปโหลดรูป (ถ้ามี)
+   อัปโหลดรูป
    ============================== */
 $photo_url = null;
 
-if (!empty($_FILES['photo']['tmp_name']) && $_FILES['photo']['error'] === 0) {
-    $upload = uploadToCloudinary($_FILES['photo']);
+if (empty($_FILES['photo']['tmp_name']) || $_FILES['photo']['error'] !== 0) {
+    $_SESSION['error'] = "❌ กรุณาอัปโหลดรูป";
+    header("Location: dashboard.php");
+    exit();
+}
 
-if (isset($upload['error'])) {
+$upload = uploadToCloudinary($_FILES['photo']);
+
+if (!isset($upload['secure_url'])) {
     $_SESSION['error'] = "❌ Cloudinary config ผิดพลาด";
     header("Location: dashboard.php");
     exit();
 }
 
-
-    $photo_url = $upload['secure_url'];
-}
+$photo_url = $upload['secure_url'];
 
 /* ==============================
    insert DB
@@ -94,9 +94,9 @@ $stmt = $conn->prepare("
 $stmt->bind_param("ss", $id, $photo_url);
 $stmt->execute();
 
-/* ✅ ส่งข้อความสำเร็จไปหน้า dashboard */
+/* ==============================
+   success
+   ============================== */
 $_SESSION['success'] = "✅ เช็คชื่อเรียบร้อยแล้ว";
-
-/* redirect */
 header("Location: dashboard.php");
 exit();
