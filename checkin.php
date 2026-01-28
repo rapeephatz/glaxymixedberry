@@ -2,27 +2,41 @@
 session_start();
 include "db.php";
 
+/* ==============================
+   เช็ค session
+   ============================== */
+if (!isset($_SESSION['user']['id'])) {
+    header("Location: login.php");
+    exit();
+}
+
 $id = $_SESSION['user']['id'];
 
-/* กันเช็คซ้ำ */
+/* ==============================
+   กันเช็คอินซ้ำ
+   ============================== */
 $check = $conn->query("
-SELECT * FROM checkins 
-WHERE discord_id='$id' 
-AND DATE(time)=CURDATE()
+    SELECT id FROM checkins
+    WHERE discord_id='$id'
+    AND DATE(time)=CURDATE()
 ");
 
-if($check->num_rows > 0){
+if ($check && $check->num_rows > 0) {
     header("Location: dashboard.php");
     exit();
 }
 
 /* ==============================
-   ฟังก์ชันอัปโหลด Cloudinary
+   Cloudinary upload
    ============================== */
 function uploadToCloudinary($file){
-    $cloud = "dzisxdaul";        // cloud name ของคุณ
-    $key = "533369769661924";       // ใส่จริง
-    $secret = "ScW3SimCLzYDgMPGeBHfz3I-a3g"; // ใส่จริง
+    $cloud  = $_ENV['CLOUDINARY_CLOUD_NAME'] ?? null;
+    $key    = $_ENV['CLOUDINARY_API_KEY'] ?? null;
+    $secret = $_ENV['CLOUDINARY_API_SECRET'] ?? null;
+
+    if (!$cloud || !$key || !$secret) {
+        return ['error' => 'Cloudinary env missing'];
+    }
 
     $timestamp = time();
     $signature = sha1("timestamp=$timestamp$secret");
@@ -36,9 +50,12 @@ function uploadToCloudinary($file){
     ];
 
     $ch = curl_init("https://api.cloudinary.com/v1_1/$cloud/image/upload");
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POSTFIELDS => $data
+    ]);
+
     $res = curl_exec($ch);
     curl_close($ch);
 
@@ -46,30 +63,33 @@ function uploadToCloudinary($file){
 }
 
 /* ==============================
-   อัปโหลดรูป
+   อัปโหลดรูป (ถ้ามี)
    ============================== */
 $photo_url = null;
 
-if(isset($_FILES['photo']) && $_FILES['photo']['error'] == 0){
+if (!empty($_FILES['photo']['tmp_name']) && $_FILES['photo']['error'] === 0) {
     $upload = uploadToCloudinary($_FILES['photo']);
 
-    // ถ้าอัปโหลดพัง → หยุดทันที
-    if(!isset($upload['secure_url'])){
-        echo "<pre>";
-        print_r($upload);
-        exit("Cloudinary upload failed");
+    if (!isset($upload['secure_url'])) {
+        header("Location: dashboard.php?error=upload");
+        exit();
     }
 
     $photo_url = $upload['secure_url'];
 }
 
 /* ==============================
-   insert
+   insert DB
    ============================== */
-$conn->query("
-INSERT INTO checkins (discord_id,time,photo) 
-VALUES ('$id', NOW(), '$photo_url')
+$stmt = $conn->prepare("
+    INSERT INTO checkins (discord_id, time, photo)
+    VALUES (?, NOW(), ?)
 ");
+$stmt->bind_param("ss", $id, $photo_url);
+$stmt->execute();
 
+/* ==============================
+   redirect
+   ============================== */
 header("Location: dashboard.php");
 exit();

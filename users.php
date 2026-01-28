@@ -17,7 +17,7 @@ if(!in_array($_SESSION['user']['role'], ['admin','staff'])){
 $myrole = $_SESSION['user']['role'];
 $search = $_GET['q'] ?? "";
 
-/* ⭐ ดึง photo มาด้วย */
+/* ⭐ ดึงรูปล่าสุดของแต่ละ user */
 $sql = "
 SELECT 
 u.discord_id,
@@ -26,7 +26,13 @@ u.display_name,
 u.role,
 u.status,
 COUNT(c.id) AS total,
-MAX(c.photo) AS photo
+(
+  SELECT photo 
+  FROM checkins c2 
+  WHERE c2.discord_id = u.discord_id 
+  ORDER BY c2.time DESC 
+  LIMIT 1
+) AS photo
 FROM users u
 LEFT JOIN checkins c ON u.discord_id = c.discord_id
 WHERE u.username LIKE '%$search%'
@@ -40,12 +46,10 @@ ORDER BY total DESC
 ";
 
 $result = $conn->query($sql);
-
 if(!$result){
     die("SQL ERROR: ".$conn->error);
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -96,6 +100,7 @@ th{
 td{
     padding:16px;
     border-top:1px solid rgba(255,255,255,0.05);
+    vertical-align:middle;
 }
 tr:hover{background:rgba(255,255,255,0.03);}
 .role select{
@@ -133,8 +138,14 @@ tr:hover{background:rgba(255,255,255,0.03);}
 .badge.admin{background:#6366f1}
 .badge.staff{background:#22c55e}
 .badge.user{background:#64748b}
-a.photo-link{color:#38bdf8;text-decoration:none;}
-a.photo-link:hover{text-decoration:underline;}
+.thumb{
+    width:60px;
+    height:60px;
+    object-fit:cover;
+    border-radius:10px;
+    cursor:pointer;
+    border:2px solid #334155;
+}
 </style>
 </head>
 <body>
@@ -154,7 +165,7 @@ a.photo-link:hover{text-decoration:underline;}
 <th>Username</th>
 <th>Role</th>
 <th>Total</th>
-<th>Photo</th> <!-- ⭐ -->
+<th>Photo</th>
 <th>Status</th>
 <th>Action</th>
 </tr>
@@ -181,13 +192,17 @@ a.photo-link:hover{text-decoration:underline;}
 
 <td><?= $u['total'] ?></td>
 
-<!-- ⭐ ดูรูป -->
+<!-- ⭐ รูปจาก Cloudinary -->
 <td>
-<?php if($u['photo']): ?>
-<a href="#" class="photo-link"
-onclick="openPhoto('uploads/<?= $u['photo'] ?>')">
-<?= $u['photo'] ?>
-</a>
+<?php if($u['photo']): 
+    $thumb = str_replace(
+        "/upload/",
+        "/upload/w_200,h_200,c_fill/",
+        $u['photo']
+    );
+?>
+<img src="<?= $thumb ?>" class="thumb"
+onclick="openPhoto('<?= $u['photo'] ?>')">
 <?php else: ?>
 -
 <?php endif; ?>
@@ -213,21 +228,20 @@ onclick="return confirm('ลบ checkin ทั้งหมด?')">Delete</a>
 </div>
 
 <a href="admin.php" class="back">⬅ Back to Dashboard</a>
-
 </div>
 
 <!-- ⭐ POPUP รูป -->
 <div id="photoPopup" style="
 display:none;
 position:fixed;
-top:0;left:0;right:0;bottom:0;
-background:rgba(0,0,0,0.8);
+inset:0;
+background:rgba(0,0,0,0.85);
 justify-content:center;
 align-items:center;
 z-index:999;
 ">
-  <div style="background:#111;padding:20px;border-radius:16px;text-align:center">
-    <img id="popupImg" style="max-width:600px;border-radius:12px">
+  <div style="background:#020617;padding:20px;border-radius:20px;text-align:center">
+    <img id="popupImg" style="max-width:80vw;max-height:80vh;border-radius:16px">
     <br><br>
     <button onclick="closePhoto()" class="btn reset">Close</button>
   </div>
