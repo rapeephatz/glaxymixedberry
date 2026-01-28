@@ -2,6 +2,9 @@
 session_start();
 include "db.php";
 
+phpinfo();
+exit;
+
 /* ==============================
    เช็ค session
    ============================== */
