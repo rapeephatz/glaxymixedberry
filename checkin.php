@@ -13,7 +13,7 @@ if (!isset($_SESSION['user']['id'])) {
     header("Location: index.php");
     exit();
 }
- 
+
 $id = $_SESSION['user']['id'];
 
 /* ======================
@@ -32,43 +32,7 @@ if ($check && $check->num_rows > 0) {
 }
 
 /* ======================
-   Cloudinary upload (NO SDK)
-   ====================== */
-function uploadToCloudinary($file){
-    $cloud  = getenv('CLOUDINARY_CLOUD_NAME');
-    $key    = getenv('CLOUDINARY_API_KEY');
-    $secret = getenv('CLOUDINARY_API_SECRET');
-
-    if (!$cloud || !$key || !$secret) {
-        return ['error' => 'Cloudinary ENV missing'];
-    }
-
-    $timestamp = time();
-    $signature = sha1("timestamp=$timestamp$secret");
-
-    $data = [
-        'file' => new CURLFile($file['tmp_name']),
-        'api_key' => $key,
-        'timestamp' => $timestamp,
-        'signature' => $signature,
-        'folder' => 'checkin'
-    ];
-
-    $ch = curl_init("https://api.cloudinary.com/v1_1/$cloud/image/upload");
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POSTFIELDS => $data
-    ]);
-
-    $res = curl_exec($ch);
-    curl_close($ch);
-
-    return json_decode($res, true);
-}
-
-/* ======================
-   upload รูป
+   upload รูป (Cloudinary Unsigned)
    ====================== */
 if (empty($_FILES['photo']['tmp_name'])) {
     $_SESSION['error'] = "กรุณาเลือกรูป";
@@ -76,15 +40,39 @@ if (empty($_FILES['photo']['tmp_name'])) {
     exit();
 }
 
-$upload = uploadToCloudinary($_FILES['photo']);
+$cloudName    = getenv('CLOUDINARY_CLOUD_NAME');
+$uploadPreset = "checkin_upload";
 
-if (!isset($upload['secure_url'])) {
+if (!$cloudName) {
+    $_SESSION['error'] = "Cloudinary ENV missing";
+    header("Location: dashboard.php");
+    exit();
+}
+
+$file = $_FILES['photo']['tmp_name'];
+
+$ch = curl_init("https://api.cloudinary.com/v1_1/$cloudName/image/upload");
+curl_setopt_array($ch, [
+    CURLOPT_POST => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POSTFIELDS => [
+        'file' => new CURLFile($file),
+        'upload_preset' => $uploadPreset
+    ]
+]);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+$result = json_decode($response, true);
+
+if (!isset($result['secure_url'])) {
     $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ";
     header("Location: dashboard.php");
     exit();
 }
 
-$photo_url = $upload['secure_url'];
+$photo_url = $result['secure_url'];
 
 /* ======================
    insert DB
