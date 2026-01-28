@@ -6,12 +6,14 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+
 if(!isset($_SESSION['user'])){
     header("Location: index.php");
     exit();
 }
 
 $user = $_SESSION['user'];
+$today = date("Y-m-d");
 
 if(!empty($user['avatar'])){
     $ext = str_starts_with($user['avatar'], 'a_') ? 'gif' : 'png';
@@ -21,16 +23,15 @@ if(!empty($user['avatar'])){
 }
 
 $check = $conn->query("
-    SELECT id FROM checkins
-    WHERE discord_id='{$user['id']}'
-    AND DATE(time)=CURDATE()
+SELECT * FROM checkins 
+WHERE discord_id='{$user['id']}' 
+AND DATE(time)=CURDATE()
 ");
-
 $checked_today = $check->num_rows > 0;
 
 $total = $conn->query("
-    SELECT COUNT(*) t FROM checkins
-    WHERE discord_id='{$user['id']}'
+SELECT COUNT(*) t FROM checkins 
+WHERE discord_id='{$user['id']}'
 ")->fetch_assoc()['t'];
 ?>
 <!DOCTYPE html>
@@ -43,7 +44,7 @@ $total = $conn->query("
 body{
     margin:0;
     background: linear-gradient(135deg,#020617,#0f172a);
-    font-family: Inter, sans-serif;
+    font-family: 'Inter', sans-serif;
     color:white;
 }
 .container{
@@ -68,6 +69,12 @@ body{
     border:4px solid #6366f1;
     box-shadow:0 0 25px #6366f1;
 }
+h2{margin:18px 0 6px}
+.id{
+    color:#94a3b8;
+    font-size:13px;
+}
+
 .stats{
     display:flex;
     gap:14px;
@@ -79,6 +86,16 @@ body{
     padding:14px;
     border-radius:16px;
 }
+.stat .label{
+    font-size:13px;
+    color:#94a3b8;
+}
+.stat .value{
+    margin-top:4px;
+    font-size:20px;
+    font-weight:700;
+}
+
 .progress{
     height:8px;
     background:#0f172a;
@@ -91,15 +108,24 @@ body{
     width:<?= min(100,$total*5) ?>%;
     background:linear-gradient(90deg,#6366f1,#22c55e);
 }
+
+/* upload */
 .upload{
     display:flex;
     align-items:center;
     gap:14px;
     background:#0f172a;
-    padding:16px;
+    padding:16px 18px;
     border-radius:16px;
     cursor:pointer;
+    margin-bottom:16px;
+    transition:.2s;
 }
+.upload:hover{ background:#1e293b }
+.upload-icon{ font-size:26px }
+.upload-text .title{ font-weight:600 }
+.upload-text .desc{ font-size:12px; color:#94a3b8 }
+
 .input{
     background:#0f172a;
     padding:14px;
@@ -113,6 +139,7 @@ body{
     color:white;
     outline:none;
 }
+
 .btn{
     width:100%;
     padding:16px;
@@ -121,6 +148,7 @@ body{
     font-size:16px;
     font-weight:600;
     cursor:pointer;
+    transition:.2s;
 }
 .btn.primary{
     background:linear-gradient(135deg,#6366f1,#22c55e);
@@ -129,6 +157,20 @@ body{
     margin-top:12px;
     background:linear-gradient(135deg,#ef4444,#f97316);
 }
+.btn:hover{transform:scale(1.05)}
+.btn:disabled{background:#334155}
+
+.footer{
+    margin-top:18px;
+    font-size:13px;
+}
+.footer a{
+    color:#94a3b8;
+    text-decoration:none;
+}
+.footer a:hover{color:white}
+
+/* popup */
 .popup{
     position:fixed;
     inset:0;
@@ -146,6 +188,7 @@ body{
 .modal textarea{
     width:100%;
     height:90px;
+    margin-top:10px;
     background:#020617;
     border:none;
     border-radius:12px;
@@ -160,52 +203,82 @@ body{
 <div class="card">
 
 <?php if(isset($_SESSION['error'])): ?>
-<div style="background:#7f1d1d;padding:14px;border-radius:14px;margin-bottom:18px;">
-<?= $_SESSION['error']; unset($_SESSION['error']); ?>
+<div style="
+background:#7f1d1d;
+color:white;
+padding:14px;
+border-radius:14px;
+margin-bottom:18px;
+text-align:center;
+font-weight:600;
+">
+<?= $_SESSION['error'] ?>
 </div>
-<?php endif; ?>
+<?php unset($_SESSION['error']); endif; ?>
 
 <?php if(isset($_SESSION['success'])): ?>
-<div style="background:#064e3b;padding:14px;border-radius:14px;margin-bottom:18px;">
-<?= $_SESSION['success']; unset($_SESSION['success']); ?>
+<div style="
+background:#064e3b;
+color:#d1fae5;
+padding:14px;
+border-radius:14px;
+margin-bottom:18px;
+text-align:center;
+font-weight:600;
+">
+<?= $_SESSION['success'] ?>
 </div>
-<?php endif; ?>
+<?php unset($_SESSION['success']); endif; ?>
+
 
 <img class="avatar" src="<?= $avatar ?>">
 <h2><?= htmlspecialchars($user['username']) ?></h2>
+<div class="id">Discord ID: <?= $user['id'] ?></div>
 
 <div class="stats">
-    <div class="stat">🔥 เช็คสะสม<br><b><?= $total ?></b></div>
-    <div class="stat">📅 วันนี้<br><b><?= $checked_today?'เช็คแล้ว':'ยังไม่เช็ค' ?></b></div>
+    <div class="stat">
+        <div class="label">🔥 เช็คสะสม</div>
+        <div class="value"><?= $total ?></div>
+    </div>
+    <div class="stat">
+        <div class="label">📅 วันนี้</div>
+        <div class="value"><?= $checked_today?'เช็คแล้ว':'ยังไม่เช็ค' ?></div>
+    </div>
 </div>
 
 <div class="progress"><div class="bar"></div></div>
 
-<!-- เช็คชื่อ -->
 <form action="checkin.php" method="post" enctype="multipart/form-data">
 <input type="hidden" name="type" value="checkin">
 
-<label class="upload">
-📸 อัปโหลดรูป
-<input type="file" name="photo" required hidden>
+<label class="upload" id="uploadBox">
+    <div class="upload-icon">📸</div>
+    <div class="upload-text">
+        <div class="title">อัปโหลดรูปตอนเล่นเกม</div>
+        <div class="desc">ยังไม่ได้เลือกรูป</div>
+    </div>
+    <input type="file" name="photo" id="fileInput" hidden required>
 </label>
 
 <div class="input">
-<input type="text" name="gm_name" placeholder="ชื่อเพื่อนตรวจ" required>
+<input type="text" name="gm_name" placeholder="˚₊‧ ɢᴍʙ ‧₊˚ ชื่อเพื่อนตรวจ" required>
 </div>
 
 <button class="btn primary" <?= $checked_today?'disabled':'' ?>>
-เช็คชื่อวันนี้
+<?= $checked_today?'เช็คแล้ววันนี้':'เช็คชื่อวันนี้' ?>
 </button>
 </form>
 
-<!-- ขอลา -->
 <button class="btn danger" onclick="openLeave()">ขอลา</button>
 
+<div class="footer">
+<a href="admin.php">Admin</a> | 
+<a href="logout.php">Logout</a>
+</div>
+
 </div>
 </div>
 
-<!-- popup ขอลา -->
 <div class="popup" id="leavePopup">
 <div class="modal">
 <h3>ขอลา</h3>
@@ -219,8 +292,19 @@ body{
 </div>
 
 <script>
-function openLeave(){ document.getElementById('leavePopup').style.display='flex' }
-function closeLeave(){ document.getElementById('leavePopup').style.display='none' }
+const fileInput = document.getElementById('fileInput');
+const uploadBox = document.getElementById('uploadBox');
+
+fileInput.addEventListener('change', function(){
+    if(this.files.length > 0){
+        uploadBox.querySelector('.title').textContent = "เลือกรูปแล้ว";
+        uploadBox.querySelector('.desc').textContent = this.files[0].name;
+        uploadBox.style.background = "#052e1c";
+    }
+});
+
+function openLeave(){ leavePopup.style.display='flex' }
+function closeLeave(){ leavePopup.style.display='none' }
 </script>
 
 </body>
