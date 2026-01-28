@@ -11,7 +11,7 @@ $id   = $_SESSION['user']['id'];
 $type = $_POST['type'] ?? '';
 
 /* ======================
-   กันส่งซ้ำ
+   กันส่งซ้ำ (วันเดียวกัน)
    ====================== */
 $check = $conn->query("
     SELECT id FROM checkins
@@ -51,7 +51,7 @@ if ($type === 'leave') {
 }
 
 /* ======================
-   เช็คชื่อ (ต้องมีรูป)
+   กรณี เช็คชื่อ (ต้องมีรูป)
    ====================== */
 if (
     !isset($_FILES['photo']) ||
@@ -64,7 +64,7 @@ if (
 }
 
 /* ======================
-   ตรวจ MIME (มือถือ)
+   ตรวจ MIME (รองรับมือถือ)
    ====================== */
 $finfo = finfo_open(FILEINFO_MIME_TYPE);
 $mime  = finfo_file($finfo, $_FILES['photo']['tmp_name']);
@@ -86,7 +86,7 @@ if (!in_array($mime, $allow)) {
 }
 
 /* ======================
-   Upload → Cloudinary
+   Upload → Cloudinary (CURLFile)
    ====================== */
 function uploadToCloudinary($file){
 
@@ -97,28 +97,23 @@ function uploadToCloudinary($file){
     $timestamp = time();
     $signature = sha1("timestamp=$timestamp$secret");
 
-    $fileData = file_get_contents($file['tmp_name']);
-    if ($fileData === false) {
-        return ['error' => 'อ่านไฟล์ไม่สำเร็จ'];
-    }
-
-    $base64 = 'data:' . mime_content_type($file['tmp_name']) .
-              ';base64,' . base64_encode($fileData);
-
     $data = [
-        'file'      => $base64,
+        'file' => new CURLFile(
+            $file['tmp_name'],
+            mime_content_type($file['tmp_name']),
+            $file['name']
+        ),
         'api_key'   => $key,
         'timestamp' => $timestamp,
         'signature' => $signature,
-        'folder'    => 'checkins',
-        'format'    => 'jpg'
+        'folder'    => 'checkins'
     ];
 
     $ch = curl_init("https://api.cloudinary.com/v1_1/$cloud/image/upload");
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POSTFIELDS => $data,
+        CURLOPT_POSTFIELDS => $data
     ]);
 
     $res = curl_exec($ch);
@@ -128,7 +123,7 @@ function uploadToCloudinary($file){
 }
 
 /* ======================
-   เรียก Cloudinary (สำคัญ!!)
+   อัปโหลดจริง
    ====================== */
 $upload = uploadToCloudinary($_FILES['photo']);
 
@@ -138,11 +133,11 @@ if (!isset($upload['secure_url'])) {
     exit();
 }
 
+$photo = $upload['secure_url'];
+
 /* ======================
    บันทึก DB
    ====================== */
-$photo = $upload['secure_url'];
-
 $stmt = $conn->prepare("
     INSERT INTO checkins (discord_id, time, type, photo)
     VALUES (?, NOW(), 'checkin', ?)
