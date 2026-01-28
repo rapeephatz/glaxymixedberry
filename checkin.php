@@ -2,13 +2,6 @@
 session_start();
 include "db.php";
 
-/* ======================
-   รองรับรูปมือถือ / iPhone
-   ====================== */
-ini_set('upload_max_filesize','15M');
-ini_set('post_max_size','15M');
-ini_set('memory_limit','256M');
-
 if (!isset($_SESSION['user'])) {
     header("Location: index.php");
     exit();
@@ -18,7 +11,7 @@ $id   = $_SESSION['user']['id'];
 $type = $_POST['type'] ?? '';
 
 /* ======================
-   กันซ้ำวันเดียวกัน
+   กันส่งซ้ำ
    ====================== */
 $check = $conn->query("
     SELECT id FROM checkins
@@ -33,7 +26,7 @@ if ($check->num_rows > 0) {
 }
 
 /* ======================
-   ขอลา
+   กรณี ขอลา
    ====================== */
 if ($type === 'leave') {
 
@@ -58,20 +51,25 @@ if ($type === 'leave') {
 }
 
 /* ======================
-   ตรวจไฟล์
+   กรณี เช็คชื่อ (ต้องมีรูป)
    ====================== */
 if (
     !isset($_FILES['photo']) ||
-    $_FILES['photo']['error'] !== UPLOAD_ERR_OK
+    $_FILES['photo']['error'] !== UPLOAD_ERR_OK ||
+    !is_uploaded_file($_FILES['photo']['tmp_name'])
 ) {
-    $_SESSION['error'] = "กรุณาอัปโหลดรูป";
+    $_SESSION['error'] = "กรุณาอัปโหลดรูปใหม่อีกครั้ง";
     header("Location: dashboard.php");
     exit();
 }
 
 /* ======================
-   รองรับ HEIC / HEIF (iPhone)
+   ตรวจ MIME (มือถือ!)
    ====================== */
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$mime  = finfo_file($finfo, $_FILES['photo']['tmp_name']);
+finfo_close($finfo);
+
 $allow = [
     'image/jpeg',
     'image/png',
@@ -81,14 +79,14 @@ $allow = [
     'image/heif'
 ];
 
-if (!in_array($_FILES['photo']['type'], $allow)) {
-    $_SESSION['error'] = "ไฟล์รูปไม่รองรับ";
+if (!in_array($mime, $allow)) {
+    $_SESSION['error'] = "ชนิดไฟล์ไม่รองรับ ($mime)";
     header("Location: dashboard.php");
     exit();
 }
 
 /* ======================
-   Upload Cloudinary
+   Upload → Cloudinary
    ====================== */
 function uploadToCloudinary($file){
     $cloud  = getenv('CLOUDINARY_CLOUD_NAME');
@@ -99,45 +97,51 @@ function uploadToCloudinary($file){
     $signature = sha1("timestamp=$timestamp$secret");
 
     $data = [
-        'file' => curl_file_create(
+        'file'      => curl_file_create(
             $file['tmp_name'],
-            $file['type'],
+            mime_content_type($file['tmp_name']),
             $file['name']
         ),
-        'api_key' => $key,
+        'api_key'   => $key,
         'timestamp' => $timestamp,
         'signature' => $signature,
-        'folder' => 'checkins',
-        'resource_type' => 'image',
-        'format' => 'jpg' // ⭐ แปลง HEIC → JPG
+        'folder'    => 'checkins',
+        'format'    => 'jpg',          // ⭐ บังคับแปลง (มือถือรอด)
+        'quality'   => 'auto',
+        'fetch_format' => 'auto'
     ];
 
     $ch = curl_init("https://api.cloudinary.com/v1_1/$cloud/image/upload");
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POSTFIELDS => $data
+        CURLOPT_POSTFIELDS => $data,
+        CURLOPT_SSL_VERIFYPEER => true
     ]);
 
     $res = curl_exec($ch);
-    curl_close($ch);
 
+    if ($res === false) {
+        return ['error' => curl_error($ch)];
+    }
+
+    curl_close($ch);
     return json_decode($res, true);
 }
 
 $upload = uploadToCloudinary($_FILES['photo']);
 
-if (empty($upload['secure_url'])) {
+if (!isset($upload['secure_url'])) {
     $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ (Cloudinary)";
     header("Location: dashboard.php");
     exit();
 }
 
-$photo = $upload['secure_url'];
-
 /* ======================
    บันทึก DB
    ====================== */
+$photo = $upload['secure_url'];
+
 $stmt = $conn->prepare("
     INSERT INTO checkins (discord_id, time, type, photo)
     VALUES (?, NOW(), 'checkin', ?)
