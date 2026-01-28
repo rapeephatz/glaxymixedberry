@@ -69,7 +69,7 @@ $check = $conn->query("SELECT * FROM users WHERE discord_id='$id'");
 if ($check->num_rows == 0) {
     $conn->query("
         INSERT INTO users (discord_id, username, role, status)
-        VALUES ('$id', '$name', 'user', 'new')
+        VALUES ('$id', '$name', 'user', 'pending')
     ");
 }
 
