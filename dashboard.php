@@ -37,6 +37,7 @@ WHERE discord_id='{$user['id']}'
 <!DOCTYPE html>
 <html lang="th">
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
 <title>ระบบเช็คชื่อ GMB</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -195,6 +196,69 @@ h2{margin:18px 0 6px}
     color:white;
     padding:10px;
 }
+
+/* =======================
+   Responsive (Mobile / iPad)
+   ======================= */
+
+@media (max-width: 768px){
+    .container{
+        padding:20px;
+        align-items:flex-start;
+    }
+
+    .card{
+        width:100%;
+        max-width:420px;
+        padding:28px 22px;
+        border-radius:24px;
+    }
+
+    .avatar{
+        width:96px;
+        height:96px;
+    }
+
+    h2{
+        font-size:20px;
+    }
+
+    .stats{
+        flex-direction:column;
+        gap:12px;
+    }
+
+    .stat{
+        padding:12px;
+    }
+
+    .stat .value{
+        font-size:18px;
+    }
+
+    .upload{
+        padding:14px;
+    }
+
+    .btn{
+        padding:14px;
+        font-size:15px;
+    }
+
+    .modal{
+        width:90%;
+        max-width:320px;
+    }
+}
+
+/* iPad แนวนอน / จอกลาง */
+@media (min-width: 769px) and (max-width: 1024px){
+    .card{
+        width:380px;
+    }
+}
+
+
 </style>
 </head>
 <body>

@@ -54,24 +54,37 @@ if(!$result){
 <html lang="th">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>User Management</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
 <style>
 *{box-sizing:border-box}
 body{
     margin:0;
-    font-family:Inter;
+    font-family:Inter,sans-serif;
     background:linear-gradient(135deg,#0f172a,#020617);
     color:white;
 }
-.wrapper{padding:50px;}
+.wrapper{
+    padding:40px;
+    max-width:1200px;
+    margin:auto;
+}
+
 .header{
     display:flex;
     justify-content:space-between;
     align-items:center;
     margin-bottom:30px;
+    flex-wrap:wrap;
+    gap:12px;
 }
-.header h1{margin:0;font-size:28px;}
+.header h1{
+    margin:0;
+    font-size:28px;
+}
 .search{
     background:#1e293b;
     border-radius:12px;
@@ -83,26 +96,36 @@ body{
     outline:none;
     color:white;
 }
+
 .card{
     background:rgba(255,255,255,0.05);
     backdrop-filter:blur(14px);
     border-radius:20px;
-    overflow:hidden;
+    overflow:auto;
     box-shadow:0 40px 80px rgba(0,0,0,.5);
 }
-table{width:100%;border-collapse:collapse;}
+
+/* table */
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:720px;
+}
 th{
     text-align:left;
     padding:16px;
     color:#94a3b8;
     font-weight:600;
+    font-size:14px;
 }
 td{
     padding:16px;
     border-top:1px solid rgba(255,255,255,0.05);
     vertical-align:middle;
+    font-size:14px;
 }
 tr:hover{background:rgba(255,255,255,0.03);}
+
 .role select{
     background:#0f172a;
     color:white;
@@ -110,6 +133,7 @@ tr:hover{background:rgba(255,255,255,0.03);}
     padding:6px 10px;
     border-radius:8px;
 }
+
 .btn{
     padding:6px 12px;
     border-radius:10px;
@@ -120,9 +144,11 @@ tr:hover{background:rgba(255,255,255,0.03);}
     display:inline-block;
     cursor:pointer;
 }
+
 .reset{background:#f59e0b;color:black}
 .delete{background:#ef4444;color:white}
 .save{background:#22c55e;color:black}
+
 .back{
     display:inline-block;
     margin-top:20px;
@@ -130,6 +156,7 @@ tr:hover{background:rgba(255,255,255,0.03);}
     text-decoration:none;
 }
 .back:hover{color:white}
+
 .badge{
     padding:4px 10px;
     border-radius:20px;
@@ -138,17 +165,36 @@ tr:hover{background:rgba(255,255,255,0.03);}
 .badge.admin{background:#6366f1}
 .badge.staff{background:#22c55e}
 .badge.user{background:#64748b}
+
 .thumb{
-    width:60px;
-    height:60px;
+    width:52px;
+    height:52px;
     object-fit:cover;
     border-radius:10px;
     cursor:pointer;
     border:2px solid #334155;
 }
+
+/* 📱 Mobile */
+@media (max-width:768px){
+    .wrapper{
+        padding:20px;
+    }
+    .header h1{
+        font-size:22px;
+    }
+    th,td{
+        padding:12px;
+        font-size:13px;
+    }
+    .btn{
+        margin-bottom:6px;
+    }
+}
 </style>
 </head>
 <body>
+
 
 <div class="wrapper">
 

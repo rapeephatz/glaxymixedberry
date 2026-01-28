@@ -55,23 +55,35 @@ $leaves = $conn->query($leave_sql);
 <html lang="th">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Report</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
 <style>
 *{box-sizing:border-box}
 body{
     margin:0;
-    font-family:Inter;
+    font-family:Inter,sans-serif;
     background:linear-gradient(135deg,#0f172a,#020617);
     color:white;
 }
-.wrapper{padding:50px}
+
+.wrapper{
+    padding:50px;
+    max-width:1200px;
+    margin:auto;
+}
+
 .header{
     display:flex;
     justify-content:space-between;
     align-items:center;
     margin-bottom:30px;
+    flex-wrap:wrap;
+    gap:12px;
 }
+
 .search{
     background:#1e293b;
     padding:10px 16px;
@@ -83,46 +95,60 @@ body{
     color:white;
     outline:none;
 }
+
 .card{
     background:rgba(255,255,255,0.05);
     backdrop-filter:blur(16px);
     border-radius:22px;
-    overflow:hidden;
+    overflow-x:auto;
     box-shadow:0 40px 80px rgba(0,0,0,.6);
     margin-bottom:40px;
 }
+
 table{
     width:100%;
     border-collapse:collapse;
+    min-width:640px;
 }
-th,td{padding:18px; vertical-align:top}
+
+th,td{
+    padding:18px;
+    vertical-align:top;
+    font-size:14px;
+}
 th{
     color:#94a3b8;
     text-align:left;
 }
+
 tr{
     border-top:1px solid rgba(255,255,255,0.05);
 }
 tr:hover{
     background:rgba(255,255,255,0.04);
 }
+
 .rank{
     font-weight:700;
     font-size:18px;
 }
+
 .today{
     color:#22c55e;
     font-weight:600;
 }
+
 .reason{
     color:#e5e7eb;
     white-space:pre-line;
 }
+
 .section-title{
     font-size:26px;
     font-weight:700;
     margin:50px 0 20px;
 }
+
 .back{
     display:inline-block;
     margin-top:10px;
@@ -130,8 +156,30 @@ tr:hover{
     text-decoration:none;
 }
 .back:hover{color:white}
+
+/* 📱 Mobile / iPad */
+@media (max-width:768px){
+    .wrapper{
+        padding:20px;
+    }
+    h1{
+        font-size:22px;
+    }
+    .section-title{
+        font-size:20px;
+        margin-top:40px;
+    }
+    th,td{
+        padding:12px;
+        font-size:13px;
+    }
+    .rank{
+        font-size:15px;
+    }
+}
 </style>
 </head>
+
 <body>
 
 <div class="wrapper">

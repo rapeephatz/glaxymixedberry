@@ -2,22 +2,32 @@
 session_start();
 include "db.php";
 
-if(!isset($_SESSION['user'])){
+if(!isset($_SESSION['user']['id'])){
     header("Location: index.php");
     exit();
 }
 
 $id = $_SESSION['user']['id'];
 
-/* ดึง role สดจาก DB */
-$row = $conn->query("SELECT role FROM users WHERE discord_id='$id'");
-$data = $row->fetch_assoc();
+/* ดึง role จาก DB แบบปลอดภัย */
+$stmt = $conn->prepare("SELECT role FROM users WHERE discord_id = ?");
+$stmt->bind_param("s", $id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if($result->num_rows === 0){
+    session_destroy();
+    header("Location: index.php");
+    exit();
+}
+
+$data = $result->fetch_assoc();
 $role = $data['role'] ?? 'user';
 
 /* sync session */
 $_SESSION['user']['role'] = $role;
 
-/* ถ้าไม่ใช่ admin/staff → popup */
+/* ❌ ไม่ใช่ admin / staff → popup */
 if(!in_array($role, ['admin','staff'])){
 ?>
 <!DOCTYPE html>

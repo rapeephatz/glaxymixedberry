@@ -1,2 +1,1 @@
-<?php
-var_dump(function_exists('curl_init'));
+<h5>nope</h5>
