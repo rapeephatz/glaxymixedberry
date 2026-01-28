@@ -86,7 +86,7 @@ if (!in_array($mime, $allow)) {
 }
 
 /* ======================
-   Upload → Cloudinary (CURLFile)
+   Upload → Cloudinary (ถูกต้อง)
    ====================== */
 function uploadToCloudinary($file){
 
@@ -95,7 +95,10 @@ function uploadToCloudinary($file){
     $secret = getenv('CLOUDINARY_API_SECRET');
 
     $timestamp = time();
-    $signature = sha1("timestamp=$timestamp$secret");
+
+    // ✅ ต้อง sign folder + timestamp
+    $stringToSign = "folder=checkins&timestamp=$timestamp";
+    $signature = sha1($stringToSign . $secret);
 
     $data = [
         'file' => new CURLFile(
@@ -129,19 +132,18 @@ $upload = uploadToCloudinary($_FILES['photo']);
 
 if (!isset($upload['secure_url'])) {
 
-    // DEBUG ชั่วคราว
+    // DEBUG
     echo "<pre>";
     echo "Cloudinary error\n";
     print_r($upload);
     echo "</pre>";
     exit();
 
-    // === production ใช้แบบนี้แทน ===
+    // production
     // $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ (Cloudinary)";
     // header("Location: dashboard.php");
     // exit();
 }
-
 
 $photo = $upload['secure_url'];
 
