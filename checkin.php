@@ -17,12 +17,11 @@ $id = $_SESSION['user']['id'];
    ============================== */
 $check = $conn->query("
     SELECT id FROM checkins
-    WHERE discord_id = '$id'
-    AND DATE(time) = CURDATE()
+    WHERE discord_id='$id'
+    AND DATE(time)=CURDATE()
 ");
 
 if ($check && $check->num_rows > 0) {
-    $_SESSION['error'] = "❌ วันนี้คุณเช็คชื่อไปแล้ว";
     header("Location: dashboard.php");
     exit();
 }
@@ -31,12 +30,18 @@ if ($check && $check->num_rows > 0) {
    Cloudinary upload
    ============================== */
 function uploadToCloudinary($file){
+    // 🔥 ต้องตรงกับ Railway Variables เป๊ะ
     $cloud  = getenv('CLOUDINARY_CLOUD_NAME');
     $key    = getenv('CLOUDINARY_API_KEY');
     $secret = getenv('CLOUDINARY_API_SECRET');
 
     if (!$cloud || !$key || !$secret) {
-        return ['error' => 'Cloudinary env missing'];
+        return [
+            'error' => 'env_missing',
+            'cloud' => $cloud,
+            'key' => $key ? 'ok' : null,
+            'secret' => $secret ? 'ok' : null
+        ];
     }
 
     $timestamp = time();
@@ -68,21 +73,20 @@ function uploadToCloudinary($file){
    ============================== */
 $photo_url = null;
 
-if (empty($_FILES['photo']['tmp_name']) || $_FILES['photo']['error'] !== 0) {
-    $_SESSION['error'] = "❌ กรุณาอัปโหลดรูป";
-    header("Location: dashboard.php");
-    exit();
+if (!empty($_FILES['photo']['tmp_name']) && $_FILES['photo']['error'] === 0) {
+
+    $upload = uploadToCloudinary($_FILES['photo']);
+
+    // ❌ ถ้า Cloudinary มีปัญหา
+    if (!isset($upload['secure_url'])) {
+        $_SESSION['error'] =
+            "❌ Cloudinary error: " . json_encode($upload);
+        header("Location: dashboard.php");
+        exit();
+    }
+
+    $photo_url = $upload['secure_url'];
 }
-
-$upload = uploadToCloudinary($_FILES['photo']);
-
-if (!isset($upload['secure_url'])) {
-    $_SESSION['error'] = "❌ Cloudinary config ผิดพลาด";
-    header("Location: dashboard.php");
-    exit();
-}
-
-$photo_url = $upload['secure_url'];
 
 /* ==============================
    insert DB
@@ -98,5 +102,6 @@ $stmt->execute();
    success
    ============================== */
 $_SESSION['success'] = "✅ เช็คชื่อเรียบร้อยแล้ว";
+
 header("Location: dashboard.php");
 exit();
