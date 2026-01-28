@@ -51,7 +51,7 @@ if ($type === 'leave') {
 }
 
 /* ======================
-   กรณี เช็คชื่อ (ต้องมีรูป)
+   เช็คชื่อ (ต้องมีรูป)
    ====================== */
 if (
     !isset($_FILES['photo']) ||
@@ -64,7 +64,7 @@ if (
 }
 
 /* ======================
-   ตรวจ MIME (มือถือ!)
+   ตรวจ MIME (มือถือ)
    ====================== */
 $finfo = finfo_open(FILEINFO_MIME_TYPE);
 $mime  = finfo_file($finfo, $_FILES['photo']['tmp_name']);
@@ -127,6 +127,16 @@ function uploadToCloudinary($file){
     return json_decode($res, true);
 }
 
+/* ======================
+   เรียก Cloudinary (สำคัญ!!)
+   ====================== */
+$upload = uploadToCloudinary($_FILES['photo']);
+
+if (!isset($upload['secure_url'])) {
+    $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ (Cloudinary)";
+    header("Location: dashboard.php");
+    exit();
+}
 
 /* ======================
    บันทึก DB
