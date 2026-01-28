@@ -9,12 +9,15 @@ if(!isset($_SESSION['user'])){
 
 $search = $_GET['q'] ?? "";
 
+/* ======================
+   Leaderboard (เช็คชื่อ)
+   ====================== */
 $sql = "
 SELECT 
     u.display_name,
     u.username,
     COUNT(c.id) AS total,
-    SUM(DATE(c.time) = CURDATE()) AS today
+    SUM(DATE(c.time) = CURDATE() AND c.type='checkin') AS today
 FROM users u
 LEFT JOIN checkins c 
     ON u.discord_id = c.discord_id
@@ -29,12 +32,30 @@ ORDER BY total DESC
 ";
 
 $result = $conn->query($sql);
+
+/* ======================
+   รายการขอลา
+   ====================== */
+$leave_sql = "
+SELECT 
+    u.display_name,
+    u.username,
+    c.time,
+    c.reason
+FROM checkins c
+JOIN users u 
+    ON u.discord_id = c.discord_id
+WHERE c.type = 'leave'
+ORDER BY c.time DESC
+";
+
+$leaves = $conn->query($leave_sql);
 ?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<title>Leaderboard</title>
+<title>Report</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
@@ -68,12 +89,13 @@ body{
     border-radius:22px;
     overflow:hidden;
     box-shadow:0 40px 80px rgba(0,0,0,.6);
+    margin-bottom:40px;
 }
 table{
     width:100%;
     border-collapse:collapse;
 }
-th,td{padding:18px}
+th,td{padding:18px; vertical-align:top}
 th{
     color:#94a3b8;
     text-align:left;
@@ -92,9 +114,18 @@ tr:hover{
     color:#22c55e;
     font-weight:600;
 }
+.reason{
+    color:#e5e7eb;
+    white-space:pre-line;
+}
+.section-title{
+    font-size:26px;
+    font-weight:700;
+    margin:50px 0 20px;
+}
 .back{
     display:inline-block;
-    margin-top:25px;
+    margin-top:10px;
     color:#94a3b8;
     text-decoration:none;
 }
@@ -105,6 +136,7 @@ tr:hover{
 
 <div class="wrapper">
 
+<!-- ================= Leaderboard ================= -->
 <div class="header">
     <h1>🏆 สรุปเช็คชื่อ</h1>
     <form class="search">
@@ -115,10 +147,10 @@ tr:hover{
 <div class="card">
 <table>
 <tr>
-<th>#</th>
-<th>รายชื่อ</th>
-<th>วันนี้</th>
-<th>ทั้งหมด</th>
+    <th>#</th>
+    <th>รายชื่อ</th>
+    <th>วันนี้</th>
+    <th>ทั้งหมด</th>
 </tr>
 
 <?php 
@@ -126,12 +158,39 @@ $rank=1;
 while($u=$result->fetch_assoc()): 
 ?>
 <tr>
-<td class="rank">#<?= $rank++ ?></td>
-<td><?= htmlspecialchars($u['display_name'] ?: $u['username']) ?></td>
-<td class="today"><?= $u['today'] ? '✔' : '-' ?></td>
-<td><?= $u['total'] ?></td>
+    <td class="rank">#<?= $rank++ ?></td>
+    <td><?= htmlspecialchars($u['display_name'] ?: $u['username']) ?></td>
+    <td class="today"><?= $u['today'] ? '✔' : '-' ?></td>
+    <td><?= $u['total'] ?></td>
 </tr>
 <?php endwhile; ?>
+</table>
+</div>
+
+<!-- ================= Leave Report ================= -->
+<h2 class="section-title">📄 รายการขอลา</h2>
+
+<div class="card">
+<table>
+<tr>
+    <th>ชื่อ</th>
+    <th>วันที่</th>
+    <th>เหตุผล</th>
+</tr>
+
+<?php if($leaves->num_rows == 0): ?>
+<tr>
+    <td colspan="3" style="color:#94a3b8">ยังไม่มีการขอลา</td>
+</tr>
+<?php else: ?>
+<?php while($l=$leaves->fetch_assoc()): ?>
+<tr>
+    <td><?= htmlspecialchars($l['display_name'] ?: $l['username']) ?></td>
+    <td><?= date("d/m/Y H:i", strtotime($l['time'])) ?></td>
+    <td class="reason"><?= nl2br(htmlspecialchars($l['reason'])) ?></td>
+</tr>
+<?php endwhile; ?>
+<?php endif; ?>
 </table>
 </div>
 

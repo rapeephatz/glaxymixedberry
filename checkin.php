@@ -2,22 +2,16 @@
 session_start();
 include "db.php";
 
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-/* ======================
-   เช็ค session
-   ====================== */
-if (!isset($_SESSION['user']['id'])) {
-    $_SESSION['error'] = "กรุณาเข้าสู่ระบบ";
+if (!isset($_SESSION['user'])) {
     header("Location: index.php");
     exit();
 }
 
-$id = $_SESSION['user']['id'];
+$id   = $_SESSION['user']['id'];
+$type = $_POST['type'] ?? '';
 
 /* ======================
-   กันเช็คซ้ำ
+   กันซ้ำ (ทั้งเช็คชื่อและลา)
    ====================== */
 $check = $conn->query("
     SELECT id FROM checkins
@@ -25,69 +19,93 @@ $check = $conn->query("
     AND DATE(time)=CURDATE()
 ");
 
-if ($check && $check->num_rows > 0) {
-    $_SESSION['error'] = "วันนี้คุณเช็คชื่อไปแล้ว";
+if ($check->num_rows > 0) {
+    $_SESSION['error'] = "วันนี้คุณส่งไปแล้ว";
     header("Location: dashboard.php");
     exit();
 }
 
 /* ======================
-   upload รูป (Cloudinary Unsigned)
+   กรณี ขอลา
+   ====================== */
+if ($type === 'leave') {
+
+    $reason = trim($_POST['reason'] ?? '');
+
+    if ($reason === '') {
+        $_SESSION['error'] = "กรุณากรอกเหตุผลการลา";
+        header("Location: dashboard.php");
+        exit();
+    }
+
+    $stmt = $conn->prepare("
+        INSERT INTO checkins (discord_id, time, type, reason)
+        VALUES (?, NOW(), 'leave', ?)
+    ");
+    $stmt->bind_param("ss", $id, $reason);
+    $stmt->execute();
+
+    $_SESSION['success'] = "📄 ส่งใบลาเรียบร้อย";
+    header("Location: dashboard.php");
+    exit();
+}
+
+/* ======================
+   กรณี เช็คชื่อ (ต้องมีรูป)
    ====================== */
 if (empty($_FILES['photo']['tmp_name'])) {
-    $_SESSION['error'] = "กรุณาเลือกรูป";
+    $_SESSION['error'] = "กรุณาอัปโหลดรูป";
     header("Location: dashboard.php");
     exit();
 }
 
-$cloudName    = getenv('CLOUDINARY_CLOUD_NAME');
-$uploadPreset = "checkin_upload";
+/* ===== Cloudinary (เหมือนเดิม) ===== */
+function uploadToCloudinary($file){
+    $cloud  = getenv('CLOUDINARY_CLOUD_NAME');
+    $key    = getenv('CLOUDINARY_API_KEY');
+    $secret = getenv('CLOUDINARY_API_SECRET');
 
-if (!$cloudName) {
-    $_SESSION['error'] = "Cloudinary ENV missing";
-    header("Location: dashboard.php");
-    exit();
+    $timestamp = time();
+    $signature = sha1("timestamp=$timestamp$secret");
+
+    $data = [
+        'file' => new CURLFile($file['tmp_name']),
+        'api_key' => $key,
+        'timestamp' => $timestamp,
+        'signature' => $signature,
+        'folder' => 'checkins'
+    ];
+
+    $ch = curl_init("https://api.cloudinary.com/v1_1/$cloud/image/upload");
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POSTFIELDS => $data
+    ]);
+
+    $res = curl_exec($ch);
+    curl_close($ch);
+
+    return json_decode($res, true);
 }
 
-$file = $_FILES['photo']['tmp_name'];
+$upload = uploadToCloudinary($_FILES['photo']);
 
-$ch = curl_init("https://api.cloudinary.com/v1_1/$cloudName/image/upload");
-curl_setopt_array($ch, [
-    CURLOPT_POST => true,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POSTFIELDS => [
-        'file' => new CURLFile($file),
-        'upload_preset' => $uploadPreset
-    ]
-]);
-
-$response = curl_exec($ch);
-curl_close($ch);
-
-$result = json_decode($response, true);
-
-if (!isset($result['secure_url'])) {
+if (!isset($upload['secure_url'])) {
     $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ";
     header("Location: dashboard.php");
     exit();
 }
 
-$photo_url = $result['secure_url'];
+$photo = $upload['secure_url'];
 
-/* ======================
-   insert DB
-   ====================== */
 $stmt = $conn->prepare("
-    INSERT INTO checkins (discord_id, time, photo)
-    VALUES (?, NOW(), ?)
+    INSERT INTO checkins (discord_id, time, type, photo)
+    VALUES (?, NOW(), 'checkin', ?)
 ");
-$stmt->bind_param("ss", $id, $photo_url);
+$stmt->bind_param("ss", $id, $photo);
 $stmt->execute();
 
 $_SESSION['success'] = "✅ เช็คชื่อเรียบร้อย";
-
-/* ======================
-   redirect
-   ====================== */
 header("Location: dashboard.php");
 exit();
