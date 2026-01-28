@@ -2,145 +2,104 @@
 session_start();
 include "db.php";
 
-require 'vendor/autoload.php'; // cloudinary sdk
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-use Cloudinary\Cloudinary;
-use Cloudinary\Configuration\Configuration;
-
-/* =======================
-   CHECK LOGIN
-======================= */
-if (!isset($_SESSION['user'])) {
+/* ======================
+   เช็ค session
+   ====================== */
+if (!isset($_SESSION['user']['id'])) {
+    $_SESSION['error'] = "กรุณาเข้าสู่ระบบ";
     header("Location: index.php");
-    exit;
+    exit();
+}
+ 
+$id = $_SESSION['user']['id'];
+
+/* ======================
+   กันเช็คซ้ำ
+   ====================== */
+$check = $conn->query("
+    SELECT id FROM checkins
+    WHERE discord_id='$id'
+    AND DATE(time)=CURDATE()
+");
+
+if ($check && $check->num_rows > 0) {
+    $_SESSION['error'] = "วันนี้คุณเช็คชื่อไปแล้ว";
+    header("Location: dashboard.php");
+    exit();
 }
 
-$user = $_SESSION['user'];
-$id   = $user['id'];
+/* ======================
+   Cloudinary upload (NO SDK)
+   ====================== */
+function uploadToCloudinary($file){
+    $cloud  = getenv('CLOUDINARY_CLOUD_NAME');
+    $key    = getenv('CLOUDINARY_API_KEY');
+    $secret = getenv('CLOUDINARY_API_SECRET');
 
-/* =======================
-   CONFIG CLOUDINARY
-   (ใช้ ENV เท่านั้น)
-======================= */
-Configuration::instance([
-    'cloud' => [
-        'cloud_name' => getenv('CLOUDINARY_CLOUD_NAME'),
-        'api_key'    => getenv('CLOUDINARY_API_KEY'),
-        'api_secret' => getenv('CLOUDINARY_API_SECRET'),
-    ],
-    'url' => ['secure' => true]
-]);
-
-/* =======================
-   HANDLE REQUEST
-======================= */
-$type = $_POST['type'] ?? '';
-
-/* =======================
-   CHECK-IN
-======================= */
-if ($type === 'checkin') {
-
-    $gm = trim($_POST['gm_name'] ?? '');
-
-    if ($gm === '') {
-        $_SESSION['error'] = 'กรุณากรอกชื่อเพื่อนตรวจ';
-        header("Location: home.php");
-        exit;
+    if (!$cloud || !$key || !$secret) {
+        return ['error' => 'Cloudinary ENV missing'];
     }
 
-    /* เช็คว่ามีวันนี้แล้วหรือยัง */
-    $chk = $conn->prepare("
-        SELECT id FROM checkins
-        WHERE discord_id = ? AND DATE(time) = CURDATE()
-    ");
-    $chk->bind_param("s", $id);
-    $chk->execute();
-    $chk->store_result();
+    $timestamp = time();
+    $signature = sha1("timestamp=$timestamp$secret");
 
-    if ($chk->num_rows > 0) {
-        $_SESSION['error'] = 'วันนี้คุณเช็คชื่อไปแล้ว';
-        header("Location: home.php");
-        exit;
-    }
+    $data = [
+        'file' => new CURLFile($file['tmp_name']),
+        'api_key' => $key,
+        'timestamp' => $timestamp,
+        'signature' => $signature,
+        'folder' => 'checkin'
+    ];
 
-    /* =======================
-       UPLOAD IMAGE (OPTIONAL)
-    ======================= */
-    $photo = null;
+    $ch = curl_init("https://api.cloudinary.com/v1_1/$cloud/image/upload");
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POSTFIELDS => $data
+    ]);
 
-    if (!empty($_FILES['photo']['tmp_name'])) {
-        try {
-            $cloudinary = new Cloudinary();
+    $res = curl_exec($ch);
+    curl_close($ch);
 
-            $upload = $cloudinary->uploadApi()->upload(
-                $_FILES['photo']['tmp_name'],
-                [
-                    'folder' => 'checkin',
-                    'resource_type' => 'image'
-                ]
-            );
-
-            if (!empty($upload['secure_url'])) {
-                $photo = $upload['secure_url'];
-            }
-
-        } catch (Exception $e) {
-            // ❗ ไม่ล้างรูปเก่า ไม่เขียน photo ว่าง
-            $_SESSION['error'] = 'อัปโหลดรูปไม่สำเร็จ';
-            header("Location: home.php");
-            exit;
-        }
-    }
-
-    /* =======================
-       INSERT DB
-    ======================= */
-    if ($photo) {
-        $stmt = $conn->prepare("
-            INSERT INTO checkins (discord_id, photo, gm_name)
-            VALUES (?, ?, ?)
-        ");
-        $stmt->bind_param("sss", $id, $photo, $gm);
-    } else {
-        $stmt = $conn->prepare("
-            INSERT INTO checkins (discord_id, gm_name)
-            VALUES (?, ?)
-        ");
-        $stmt->bind_param("ss", $id, $gm);
-    }
-
-    $stmt->execute();
-
-    $_SESSION['success'] = 'เช็คชื่อสำเร็จ';
-    header("Location: home.php");
-    exit;
+    return json_decode($res, true);
 }
 
-/* =======================
-   LEAVE
-======================= */
-if ($type === 'leave') {
-
-    $reason = trim($_POST['reason'] ?? '');
-
-    if ($reason === '') {
-        $_SESSION['error'] = 'กรุณากรอกเหตุผลการลา';
-        header("Location: home.php");
-        exit;
-    }
-
-    $stmt = $conn->prepare("
-        INSERT INTO leaves (discord_id, reason)
-        VALUES (?, ?)
-    ");
-    $stmt->bind_param("ss", $id, $reason);
-    $stmt->execute();
-
-    $_SESSION['success'] = 'ส่งคำขอลาเรียบร้อย';
-    header("Location: home.php");
-    exit;
+/* ======================
+   upload รูป
+   ====================== */
+if (empty($_FILES['photo']['tmp_name'])) {
+    $_SESSION['error'] = "กรุณาเลือกรูป";
+    header("Location: dashboard.php");
+    exit();
 }
 
-header("Location: home.php");
-exit;
+$upload = uploadToCloudinary($_FILES['photo']);
+
+if (!isset($upload['secure_url'])) {
+    $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ";
+    header("Location: dashboard.php");
+    exit();
+}
+
+$photo_url = $upload['secure_url'];
+
+/* ======================
+   insert DB
+   ====================== */
+$stmt = $conn->prepare("
+    INSERT INTO checkins (discord_id, time, photo)
+    VALUES (?, NOW(), ?)
+");
+$stmt->bind_param("ss", $id, $photo_url);
+$stmt->execute();
+
+$_SESSION['success'] = "✅ เช็คชื่อเรียบร้อย";
+
+/* ======================
+   redirect
+   ====================== */
+header("Location: dashboard.php");
+exit();
