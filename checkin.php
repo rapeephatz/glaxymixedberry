@@ -2,6 +2,14 @@
 session_start();
 include "db.php";
 
+/* ======================
+   ตั้งค่าให้รองรับรูปมือถือ
+   ====================== */
+ini_set('upload_max_filesize','10M');
+ini_set('post_max_size','10M');
+ini_set('max_file_uploads','5');
+ini_set('memory_limit','256M');
+
 if (!isset($_SESSION['user'])) {
     header("Location: index.php");
     exit();
@@ -11,7 +19,7 @@ $id   = $_SESSION['user']['id'];
 $type = $_POST['type'] ?? '';
 
 /* ======================
-   กันซ้ำ (ทั้งเช็คชื่อและลา)
+   กันซ้ำ (เช็คชื่อ / ลา)
    ====================== */
 $check = $conn->query("
     SELECT id FROM checkins
@@ -53,13 +61,29 @@ if ($type === 'leave') {
 /* ======================
    กรณี เช็คชื่อ (ต้องมีรูป)
    ====================== */
-if (empty($_FILES['photo']['tmp_name'])) {
-    $_SESSION['error'] = "กรุณาอัปโหลดรูป";
+if (
+    !isset($_FILES['photo']) ||
+    $_FILES['photo']['error'] !== UPLOAD_ERR_OK
+) {
+    $code = $_FILES['photo']['error'] ?? 'no_file';
+    $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ (error: $code)";
     header("Location: dashboard.php");
     exit();
 }
 
-/* ===== Cloudinary (เหมือนเดิม) ===== */
+/* ======================
+   ตรวจชนิดไฟล์ (กันไฟล์แปลก)
+   ====================== */
+$allow = ['image/jpeg','image/png','image/webp','image/gif'];
+if (!in_array($_FILES['photo']['type'], $allow)) {
+    $_SESSION['error'] = "รองรับเฉพาะไฟล์รูป (jpg, png, webp, gif)";
+    header("Location: dashboard.php");
+    exit();
+}
+
+/* ======================
+   Upload ไป Cloudinary
+   ====================== */
 function uploadToCloudinary($file){
     $cloud  = getenv('CLOUDINARY_CLOUD_NAME');
     $key    = getenv('CLOUDINARY_API_KEY');
@@ -92,13 +116,16 @@ function uploadToCloudinary($file){
 $upload = uploadToCloudinary($_FILES['photo']);
 
 if (!isset($upload['secure_url'])) {
-    $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ";
+    $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ (Cloudinary)";
     header("Location: dashboard.php");
     exit();
 }
 
 $photo = $upload['secure_url'];
 
+/* ======================
+   บันทึกข้อมูล
+   ====================== */
 $stmt = $conn->prepare("
     INSERT INTO checkins (discord_id, time, type, photo)
     VALUES (?, NOW(), 'checkin', ?)
