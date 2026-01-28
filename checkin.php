@@ -128,10 +128,20 @@ function uploadToCloudinary($file){
 $upload = uploadToCloudinary($_FILES['photo']);
 
 if (!isset($upload['secure_url'])) {
-    $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ (Cloudinary)";
-    header("Location: dashboard.php");
+
+    // DEBUG ชั่วคราว
+    echo "<pre>";
+    echo "Cloudinary error\n";
+    print_r($upload);
+    echo "</pre>";
     exit();
+
+    // === production ใช้แบบนี้แทน ===
+    // $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ (Cloudinary)";
+    // header("Location: dashboard.php");
+    // exit();
 }
+
 
 $photo = $upload['secure_url'];
 
