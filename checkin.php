@@ -70,10 +70,12 @@ $photo_url = null;
 if (!empty($_FILES['photo']['tmp_name']) && $_FILES['photo']['error'] === 0) {
     $upload = uploadToCloudinary($_FILES['photo']);
 
-    if (!isset($upload['secure_url'])) {
-        header("Location: dashboard.php?error=upload");
-        exit();
-    }
+if (isset($upload['error'])) {
+    $_SESSION['error'] = "❌ Cloudinary config ผิดพลาด";
+    header("Location: dashboard.php");
+    exit();
+}
+
 
     $photo_url = $upload['secure_url'];
 }
@@ -88,8 +90,9 @@ $stmt = $conn->prepare("
 $stmt->bind_param("ss", $id, $photo_url);
 $stmt->execute();
 
-/* ==============================
-   redirect
-   ============================== */
+/* ✅ ส่งข้อความสำเร็จไปหน้า dashboard */
+$_SESSION['success'] = "✅ เช็คชื่อเรียบร้อยแล้ว";
+
+/* redirect */
 header("Location: dashboard.php");
 exit();

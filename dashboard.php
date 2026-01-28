@@ -202,6 +202,35 @@ h2{margin:18px 0 6px}
 <div class="container">
 <div class="card">
 
+<?php if(isset($_SESSION['error'])): ?>
+<div style="
+background:#7f1d1d;
+color:white;
+padding:14px;
+border-radius:14px;
+margin-bottom:18px;
+text-align:center;
+font-weight:600;
+">
+<?= $_SESSION['error'] ?>
+</div>
+<?php unset($_SESSION['error']); endif; ?>
+
+<?php if(isset($_SESSION['success'])): ?>
+<div style="
+background:#064e3b;
+color:#d1fae5;
+padding:14px;
+border-radius:14px;
+margin-bottom:18px;
+text-align:center;
+font-weight:600;
+">
+<?= $_SESSION['success'] ?>
+</div>
+<?php unset($_SESSION['success']); endif; ?>
+
+
 <img class="avatar" src="<?= $avatar ?>">
 <h2><?= htmlspecialchars($user['username']) ?></h2>
 <div class="id">Discord ID: <?= $user['id'] ?></div>
