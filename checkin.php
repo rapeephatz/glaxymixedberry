@@ -89,6 +89,7 @@ if (!in_array($mime, $allow)) {
    Upload → Cloudinary
    ====================== */
 function uploadToCloudinary($file){
+
     $cloud  = getenv('CLOUDINARY_CLOUD_NAME');
     $key    = getenv('CLOUDINARY_API_KEY');
     $secret = getenv('CLOUDINARY_API_SECRET');
@@ -96,19 +97,21 @@ function uploadToCloudinary($file){
     $timestamp = time();
     $signature = sha1("timestamp=$timestamp$secret");
 
+    $fileData = file_get_contents($file['tmp_name']);
+    if ($fileData === false) {
+        return ['error' => 'อ่านไฟล์ไม่สำเร็จ'];
+    }
+
+    $base64 = 'data:' . mime_content_type($file['tmp_name']) .
+              ';base64,' . base64_encode($fileData);
+
     $data = [
-        'file'      => curl_file_create(
-            $file['tmp_name'],
-            mime_content_type($file['tmp_name']),
-            $file['name']
-        ),
+        'file'      => $base64,
         'api_key'   => $key,
         'timestamp' => $timestamp,
         'signature' => $signature,
         'folder'    => 'checkins',
-        'format'    => 'jpg',          // ⭐ บังคับแปลง (มือถือรอด)
-        'quality'   => 'auto',
-        'fetch_format' => 'auto'
+        'format'    => 'jpg'
     ];
 
     $ch = curl_init("https://api.cloudinary.com/v1_1/$cloud/image/upload");
@@ -116,26 +119,14 @@ function uploadToCloudinary($file){
         CURLOPT_POST => true,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POSTFIELDS => $data,
-        CURLOPT_SSL_VERIFYPEER => true
     ]);
 
     $res = curl_exec($ch);
-
-    if ($res === false) {
-        return ['error' => curl_error($ch)];
-    }
-
     curl_close($ch);
+
     return json_decode($res, true);
 }
 
-$upload = uploadToCloudinary($_FILES['photo']);
-
-if (!isset($upload['secure_url'])) {
-    $_SESSION['error'] = "อัปโหลดรูปไม่สำเร็จ (Cloudinary)";
-    header("Location: dashboard.php");
-    exit();
-}
 
 /* ======================
    บันทึก DB
