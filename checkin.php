@@ -30,9 +30,9 @@ if ($check && $check->num_rows > 0) {
    Cloudinary upload
    ============================== */
 function uploadToCloudinary($file){
-    $cloud  = $_ENV['CLOUDINARY_CLOUD_NAME'] ?? null;
-    $key    = $_ENV['CLOUDINARY_API_KEY'] ?? null;
-    $secret = $_ENV['CLOUDINARY_API_SECRET'] ?? null;
+    $cloud  = getenv('CLOUDINARY_CLOUD_NAME');
+    $key    = getenv('CLOUDINARY_API_KEY');
+    $secret = getenv('CLOUDINARY_API_SECRET');
 
     if (!$cloud || !$key || !$secret) {
         return ['error' => 'Cloudinary env missing'];
@@ -61,6 +61,7 @@ function uploadToCloudinary($file){
 
     return json_decode($res, true);
 }
+
 
 /* ==============================
    อัปโหลดรูป (ถ้ามี)
